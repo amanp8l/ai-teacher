@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Teacher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .step {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .step.active {
+            opacity: 1;
+            visibility: visible;
+            z-index: 10;
+        }
+
+        .step-title {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 100;
+        }
+
+        /* Permission step */
+        #step0 {
+            background-color: #f1f3f5;
+        }
+
+        /* Camera step */
+        #step1 {
+            background-color: #f8f9fa;
+        }
+
+        #video,
+        #photoPreview {
+            width: 100%;
+            height: 70vh;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Audio step */
+        #step2 {
+            background-color: #e9ecef;
+        }
+
+        .recording-indicator {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background-color: #dc3545;
+            margin: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Response step */
+        #step3 {
+            background-color: #dee2e6;
+        }
+
+        #response {
+            width: 95%;
+            max-width: 800px;
+            height: 72vh;
+            padding: 20px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            white-space: pre-wrap;
+            overflow-y: scroll;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            width: 80%;
+            max-width: 400px;
+            height: 4px;
+            background-color: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.3s;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .permission-content {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .permission-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .permission-content p {
+            margin-bottom: 30px;
+            color: #666;
+            font-size: 18px;
+            line-height: 1.5;
+        }
+
+        #response {
+            /* Update existing response styles */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        #response h1,
+        #response h2,
+        #response h3 {
+            margin: 16px 0 8px 0;
+            color: #222;
+        }
+
+        #response p {
+            margin-bottom: 12px;
+        }
+
+        #response ul,
+        #response ol {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        #response li {
+            margin-bottom: 6px;
+        }
+
+        #response code {
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        #response pre {
+            background-color: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+
+        #response a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        #response a:hover {
+            text-decoration: underline;
+        }
+
+        #response blockquote {
+            border-left: 4px solid #ddd;
+            margin: 12px 0;
+            padding-left: 16px;
+            color: #666;
+        }
+
+        #response img {
+            max-width: 100%;
+            height: auto;
+            margin: 12px 0;
+            border-radius: 8px;
+        }
+
+        #response table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+        }
+
+        #response th,
+        #response td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #response th {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Step 0: Permissions -->
+    <div id="step0" class="step active">
+        <div class="permission-content">
+            <h2>AI Teacher!</h2>
+            <p>This app needs access to your camera and microphone to provide an interactive experience.</p>
+            <button id="grantPermissions">Grant Permissions</button>
+        </div>
+    </div>
+
+    <!-- Step 1: Photo Capture -->
+    <div id="step1" class="step">
+        <h2 class="step-title">Step 1: Take a Photo of your Question</h2>
+        <video id="video" autoplay playsinline></video>
+        <img id="photoPreview" style="display: none;" alt="Captured photo">
+        <button id="capturePhoto">Capture</button>
+    </div>
+
+    <!-- Step 2: Audio Recording -->
+    <div id="step2" class="step">
+        <h2 class="step-title">Step 2: Ask Question</h2>
+        <div id="recordingIndicator" class="recording-indicator" style="display: none;">
+            Recording...
+        </div>
+        <div class="progress-bar">
+            <div class="progress" id="recordingProgress"></div>
+        </div>
+        <button id="processButton">Generate Answer</button>
+    </div>
+
+    <!-- Step 3: AI Response -->
+    <div id="step3" class="step">
+        <h2 class="step-title">Step 3: Answer</h2>
+        <div id="response">Waiting for processing...</div>
+        <button id="startOver">Start Over</button>
+    </div>
+
+    <script>
+        const OPENAI_KEY = 'YOUR_OPENAI_API_KEY';
+        let mediaRecorder;
+        let audioChunks = [];
+        let stream;
+        let photoBlob;
+
+        // Function to show a specific step
+        function showStep(stepNumber) {
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+        }
+
+        async function checkPermissions() {
+            try {
+                const permissions = await Promise.all([
+                    navigator.permissions.query({ name: 'camera' }),
+                    navigator.permissions.query({ name: 'microphone' })
+                ]);
+
+                const [cameraPermission, micPermission] = permissions;
+
+                if (cameraPermission.state === 'granted' && micPermission.state === 'granted') {
+                    showStep(1);
+                    startCamera();
+                }
+
+                permissions.forEach(permission => {
+                    permission.addEventListener('change', () => {
+                        if (cameraPermission.state === 'granted' && micPermission.state === 'granted') {
+                            showStep(1);
+                            startCamera();
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error('Permission check error:', error);
+            }
+        }
+
+        async function requestPermissions() {
+            try {
+                const [audioStream, videoStream] = await Promise.all([
+                    navigator.mediaDevices.getUserMedia({ audio: true }),
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                ]);
+
+                audioStream.getTracks().forEach(track => track.stop());
+                videoStream.getTracks().forEach(track => track.stop());
+
+                showStep(1);
+                startCamera();
+            } catch (err) {
+                console.error('Permission error:', err);
+                alert('Please grant camera and microphone permissions to use this app.');
+            }
+        }
+
+        async function startCamera() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                let constraints = {
+                    video: true,
+                    audio: false
+                };
+
+                if (videoDevices.length > 0) {
+                    const backCamera = videoDevices.find(device =>
+                        device.label.toLowerCase().includes('back') ||
+                        device.label.toLowerCase().includes('rear') ||
+                        device.label.toLowerCase().includes('environment')
+                    );
+
+                    if (backCamera) {
+                        constraints.video = {
+                            deviceId: { exact: backCamera.deviceId },
+                            facingMode: 'environment'
+                        };
+                    } else {
+                        constraints.video = {
+                            facingMode: 'user'
+                        };
+                    }
+                }
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Error accessing camera. Please check permissions.');
+            }
+        }
+
+        let recordingStartTime;
+        const MAX_RECORDING_TIME = 30000; // 30 seconds
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.start();
+                recordingStartTime = Date.now();
+                updateRecordingProgress();
+                document.getElementById('recordingIndicator').style.display = 'flex';
+
+                setTimeout(() => {
+                    stopRecording();
+                }, MAX_RECORDING_TIME);
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                alert('Error accessing microphone. Please check permissions.');
+            }
+        }
+
+        function updateRecordingProgress() {
+            const progressInterval = setInterval(() => {
+                if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                    clearInterval(progressInterval);
+                    return;
+                }
+
+                const elapsed = Date.now() - recordingStartTime;
+                const progress = Math.min((elapsed / MAX_RECORDING_TIME) * 100, 100);
+                document.getElementById('recordingProgress').style.width = `${progress}%`;
+
+                if (elapsed >= MAX_RECORDING_TIME) {
+                    clearInterval(progressInterval);
+                }
+            }, 100);
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                document.getElementById('recordingIndicator').style.display = 'none';
+            }
+        }
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64String = reader.result
+                        .replace('data:', '')
+                        .replace(/^.+,/, '');
+                    resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // Event Listeners
+        document.getElementById('grantPermissions').addEventListener('click', requestPermissions);
+
+        document.getElementById('capturePhoto').addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            const video = document.getElementById('video');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            canvas.toBlob((blob) => {
+                photoBlob = blob;
+                const photoPreview = document.getElementById('photoPreview');
+                photoPreview.src = URL.createObjectURL(blob);
+                photoPreview.style.display = 'block';
+                video.style.display = 'none';
+
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+
+                showStep(2);
+                startRecording();
+            }, 'image/jpeg');
+        });
+
+        document.getElementById('processButton').addEventListener('click', async () => {
+            stopRecording();
+            // if (!photoBlob || audioChunks.length === 0) {
+            //     // alert('Please capture both photo and audio before processing');
+            //     return;
+            // }
+
+            showStep(3);
+            const responseDiv = document.getElementById('response');
+            responseDiv.textContent = 'Processing...';
+
+            try {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'audio.webm');
+                formData.append('model', 'whisper-1');
+
+                const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer '+OPENAI_KEY
+                    },
+                    body: formData
+                });
+
+                const transcriptionData = await transcriptionResponse.json();
+                const transcribedText = transcriptionData.text;
+
+                const imageBase64 = await blobToBase64(photoBlob);
+
+                const visionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer '+OPENAI_KEY
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: `Image context: ${transcribedText}\nPlease analyze the question from image and provide simple short answer.`
+                                    },
+                                    {
+                                        type: 'image_url',
+                                        image_url: {
+                                            url: `data:image/jpeg;base64,${imageBase64}`
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+                });
+
+                const visionData = await visionResponse.json();
+                const htmlContent = markdownToHtml(visionData.choices[0].message.content);
+                responseDiv.innerHTML = htmlContent;
+
+            } catch (error) {
+                console.error('Error processing with AI:', error);
+                responseDiv.textContent = 'Error processing with AI. Please check the console for details.';
+            }
+        });
+
+        // Start Over
+        document.getElementById('startOver').addEventListener('click', () => {
+            location.reload();
+        });
+
+        // Utility function to convert Blob to base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64String = reader.result
+                        .replace('data:', '')
+                        .replace(/^.+,/, '');
+                    resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        function markdownToHtml(markdown) {
+            // Handle headers
+            markdown = markdown.replace(/#{6}\s?([^\n]+)/g, '<h6>$1</h6>')
+                .replace(/#{5}\s?([^\n]+)/g, '<h5>$1</h5>')
+                .replace(/#{4}\s?([^\n]+)/g, '<h4>$1</h4>')
+                .replace(/#{3}\s?([^\n]+)/g, '<h3>$1</h3>')
+                .replace(/#{2}\s?([^\n]+)/g, '<h2>$1</h2>')
+                .replace(/#{1}\s?([^\n]+)/g, '<h1>$1</h1>');
+
+            // Handle code blocks
+            markdown = markdown.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
+
+            // Handle inline code
+            markdown = markdown.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Handle bold text
+            markdown = markdown.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // Handle italic text
+            markdown = markdown.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+            // Handle lists
+            markdown = markdown.replace(/^\s*[-*+]\s+([^\n]+)/gm, '<li>$1</li>');
+            markdown = markdown.replace(/(<li>[^<]+<\/li>\n?)+/g, '<ul>$&</ul>');
+
+            // Handle numbered lists
+            markdown = markdown.replace(/^\s*\d+\.\s+([^\n]+)/gm, '<li>$1</li>');
+            markdown = markdown.replace(/(<li>[^<]+<\/li>\n?)+/g, '<ul>$&</ul>');
+
+            // Handle links
+            markdown = markdown.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+            // Handle paragraphs
+            markdown = markdown.replace(/^(?!<[oulh])([^\n]+)$/gm, '<p>$1</p>');
+
+            // Handle line breaks
+            markdown = markdown.replace(/\n\n/g, '<br>');
+
+            return markdown;
+        }
+    </script>
+</body>
+
+</html>
