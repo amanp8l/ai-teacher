@@ -272,6 +272,9 @@
             background-color: #f5f5f5;
         }
     </style>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js">
+    </script>
 </head>
 
 <body>
@@ -307,7 +310,7 @@
     <!-- Step 3: AI Response -->
     <div id="step3" class="step">
         <h2 class="step-title">Step 3: Answer</h2>
-        <div id="response">Waiting for processing...</div>
+        <p id="response">Waiting for processing...</p>
         <button id="startOver">Start Over</button>
         <audio id="audioPlayer" controls hidden></audio>
     </div>
@@ -547,7 +550,7 @@
                                 content: [
                                     {
                                         type: 'text',
-                                        text: `Image context: ${transcribedText}\nPlease analyze the image and provide short and simple answer.`
+                                        text: `Please give a short and simple answer about this image and user query: ${transcribedText}`
                                     },
                                     {
                                         type: 'image_url',
@@ -592,6 +595,7 @@
                     alert('An error occurred: ' + error.message);
                 }
                 responseDiv.innerHTML = htmlContent;
+                MathJax.typeset();
 
             } catch (error) {
                 console.error('Error processing with AI:', error);
